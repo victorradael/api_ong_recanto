@@ -1,14 +1,15 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { v4: uuidv4 } = require("uuid");
 
-const db = require("../db/mysql").pool;
+const pg = require("../db/pg").pool;
 
 exports.registerUser = (request, response) => {
-  db.getConnection((err, conn) => {
+  pg.connect((err, client, done) => {
     if (err) return response.status(500).json({ error: err });
 
-    const allUsersQuery = "SELECT * FROM users WHERE email = ?";
-    conn.query(allUsersQuery, [request.body.email], (error, results) => {
+    const allUsersQuery = "SELECT * FROM users WHERE email = $1";
+    client.query(allUsersQuery, [request.body.email], (error, results) => {
       if (error) {
         return response.status(500).json({
           error: error,
@@ -23,15 +24,18 @@ exports.registerUser = (request, response) => {
       } else {
         bcrypt.hash(request.body.password, 10, (errBcrypt, hash) => {
           if (errBcrypt) return response.status(500).json({ error: errBcrypt });
+          const id = uuidv4();
           const registerUserQuery =
-            "INSERT INTO users (name, email, password, session) VALUES (?,?,?,?)";
-          conn.query(
+            "INSERT INTO users ( id, email, password) VALUES ( $1, $2, $3)";
+          client.query(
             registerUserQuery,
-            [request.body.name, request.body.email, hash, request.body.session],
+            [id, request.body.email, hash],
             (error, result, field) => {
-              conn.release();
+              done();
 
               if (error) {
+                console.log("ALO");
+                console.log(error);
                 return response.status(500).json({
                   error: error,
                   response: null,
@@ -53,15 +57,15 @@ exports.registerUser = (request, response) => {
 
 exports.userLogin = (request, response) => {
   console.log(request.body);
-  db.getConnection((error, conn) => {
+  pg.connect((error, client) => {
     if (error) return response.status(500).json({ error: error });
 
     const loginEmailQuery = "SELECT * FROM users WHERE email = ?";
-    conn.query(
+    client.query(
       loginEmailQuery,
       [request.body.email],
       (error, results, fields) => {
-        conn.release();
+        client.release();
         if (error) return response.status(500).json({ error: error });
         if (results.length < 1) {
           return response
