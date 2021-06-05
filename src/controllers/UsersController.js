@@ -6,6 +6,7 @@ const pg = require("../db/pg").pool;
 
 exports.registerUser = (request, response) => {
   pg.connect((err, client, done) => {
+    console.log(err);
     if (err) return response.status(500).json({ error: err });
 
     const allUsersQuery = "SELECT * FROM users WHERE email = $1";
