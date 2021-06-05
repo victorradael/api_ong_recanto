@@ -61,11 +61,12 @@ exports.userLogin = (request, response) => {
   pg.connect((error, client) => {
     if (error) return response.status(500).json({ error: error });
 
-    const loginEmailQuery = "SELECT * FROM users WHERE email = ?";
+    const loginEmailQuery = "SELECT * FROM users WHERE email = $1";
     client.query(
       loginEmailQuery,
       [request.body.email],
       (error, results, fields) => {
+        console.log(results);
         client.release();
         if (error) return response.status(500).json({ error: error });
         if (results.length < 1) {
@@ -75,7 +76,7 @@ exports.userLogin = (request, response) => {
         }
         bcrypt.compare(
           request.body.password,
-          results[0].password,
+          results.rows[0].password,
           (error, bcryptResult) => {
             if (error) {
               return response
@@ -85,15 +86,15 @@ exports.userLogin = (request, response) => {
             if (bcryptResult) {
               let userToken = jwt.sign(
                 {
-                  user_id: results[0].id,
-                  email: results[0].email,
+                  user_id: results.rows[0].id,
+                  email: results.rows[0].email,
                 },
                 process.env.JWT_KEY
               );
 
               const user = {
-                userName: results[0].name,
-                userEmail: results[0].email,
+                userName: results.rows[0].name,
+                userEmail: results.rows[0].email,
               };
               return response.status(200).json({
                 message: "Authentication Success!",

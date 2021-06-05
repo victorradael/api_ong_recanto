@@ -7,7 +7,7 @@ const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 const usersRoutes = require("./routes/users");
-const resumeRoutes = require("./routes/resume");
+const angelsRoutes = require("./routes/angels");
 
 const port = process.env.PORT || 3000;
 
@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use("/user", usersRoutes);
-app.use("/resume", resumeRoutes);
+app.use("/angels", angelsRoutes);
 
 app.use((request, response, next) => {
   const error = new Error("Route not found!");
